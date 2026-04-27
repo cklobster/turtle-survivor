@@ -39,6 +39,9 @@ raccoonMortarImage.src = './assets/raccoon-mortar.png';
 const shrimpImage = new Image();
 shrimpImage.src = './assets/shrimp.png';
 
+const starOrbitImage = new Image();
+starOrbitImage.src = './assets/star-orbit.png';
+
 const keys = new Set();
 
 const state = {
@@ -917,6 +920,12 @@ function drawXpGems() {
 function drawOrbitStars() {
   const stars = state.orbitStars || [];
   for (const star of stars) {
+    if (starOrbitImage.complete && starOrbitImage.naturalWidth > 0) {
+      const size = star.radius * 2.6;
+      ctx.drawImage(starOrbitImage, star.x - size / 2, star.y - size / 2, size, size);
+      continue;
+    }
+
     ctx.fillStyle = '#ffe066';
     ctx.beginPath();
     ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
