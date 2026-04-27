@@ -67,6 +67,14 @@ const baseStats = {
   cooldownFactor: 1
 };
 
+function getMortarCooldown(level, cooldownFactor = 1) {
+  return Math.max(0.35, 1.35 - level * 0.08) * cooldownFactor;
+}
+
+function getBladeCooldown(level, cooldownFactor = 1) {
+  return Math.max(0.25, 0.95 - level * 0.05) * cooldownFactor;
+}
+
 function createPlayer() {
   return {
     x: WORLD.width / 2,
@@ -81,8 +89,8 @@ function createPlayer() {
     facing: { x: 1, y: 0 },
     pickupRadius: baseStats.pickupRadius,
     weapons: {
-      mortar: { level: 1, cooldown: 1.35, timer: 0 },
-      blade: { level: 1, cooldown: 0.95, timer: 0 },
+      mortar: { level: 1, cooldown: 1.35, timer: getMortarCooldown(1, 1) },
+      blade: { level: 1, cooldown: 0.95, timer: getBladeCooldown(1, 1) },
       orbit: { level: 1, angle: 0 }
     },
     passives: {
@@ -318,31 +326,47 @@ function spawnEnemy() {
   });
 }
 
-function spawnExplosion(x, y, radius, damage) {
-  state.explosions.push({ x, y, radius, damage, age: 0, life: 0.3, hitIds: new Set() });
+function spawnExplosion(x, y, radius, damage, life = 0.3) {
+  state.explosions.push({ x, y, radius, damage, age: 0, life, hitIds: new Set() });
+}
+
+function spawnHazard(x, y, radius, damagePerTick, duration, tickInterval) {
+  state.explosions.push({
+    kind: 'hazard',
+    x,
+    y,
+    radius,
+    damage: damagePerTick,
+    age: 0,
+    life: duration,
+    tickInterval,
+    tickTimer: 0,
+    hitIds: new Set()
+  });
 }
 
 function fireMortar() {
   const player = state.player;
   const weapon = player.weapons.mortar;
-  const target = getEnemyClusterTarget();
-  if (!target) return false;
-
   const level = weapon.level;
   const volley = level >= 4 ? 2 : 1;
 
   for (let i = 0; i < volley; i += 1) {
-    const spread = volley > 1 ? (i === 0 ? -22 : 22) : 0;
+    const spread = volley > 1 ? (i === 0 ? -28 : 28) : 0;
     state.projectiles.push({
       kind: 'mortar',
-      x: player.x,
-      y: player.y,
-      tx: target.x + spread,
-      ty: target.y + spread * 0.5,
-      speed: 300,
-      radius: 7,
-      damage: 22 + level * 10,
-      blastRadius: 48 + level * 8,
+      x: player.x + spread * 0.2,
+      y: player.y - 20,
+      tx: player.x + spread,
+      ty: player.y + spread * 0.35,
+      radius: 14,
+      damage: 30 + level * 12,
+      blastRadius: 80 + level * 12,
+      hazardRadius: 68 + level * 10,
+      hazardDamage: 10 + level * 3,
+      delay: 3,
+      life: 0,
+      triggered: false,
       color: '#8ecae6'
     });
   }
@@ -367,12 +391,12 @@ function fireBlade() {
       kind: 'blade',
       x: player.x,
       y: player.y,
-      vx: Math.cos(angle) * (360 + level * 24),
-      vy: Math.sin(angle) * (360 + level * 24),
+      vx: Math.cos(angle) * (120 + level * 8),
+      vy: Math.sin(angle) * (120 + level * 8),
       radius: 8,
       damage: 18 + level * 12,
       life: 0,
-      maxLife: 0.6 + level * 0.08,
+      maxLife: 1.8 + level * 0.24,
       returning: false,
       pierce: 1 + Math.floor(level / 2),
       hitIds: new Set(),
@@ -391,7 +415,7 @@ function updateWeapons(dt) {
   if (mortar.timer <= 0) {
     const fired = fireMortar();
     mortar.timer = fired
-      ? Math.max(0.35, mortar.cooldown - mortar.level * 0.08) * player.cooldownFactor
+      ? getMortarCooldown(mortar.level, player.cooldownFactor)
       : 0.12;
   }
 
@@ -400,7 +424,7 @@ function updateWeapons(dt) {
   if (blade.timer <= 0) {
     const fired = fireBlade();
     blade.timer = fired
-      ? Math.max(0.25, blade.cooldown - blade.level * 0.05) * player.cooldownFactor
+      ? getBladeCooldown(blade.level, player.cooldownFactor)
       : 0.12;
   }
 
@@ -429,15 +453,15 @@ function updateProjectiles(dt) {
 
   for (const projectile of state.projectiles) {
     if (projectile.kind === 'mortar') {
-      const dx = projectile.tx - projectile.x;
-      const dy = projectile.ty - projectile.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist <= projectile.speed * dt) {
-        spawnExplosion(projectile.tx, projectile.ty, projectile.blastRadius, projectile.damage);
+      projectile.life += dt;
+
+      if (!projectile.triggered && projectile.life >= projectile.delay) {
+        projectile.triggered = true;
+        spawnExplosion(projectile.tx, projectile.ty, projectile.blastRadius, projectile.damage, 0.45);
+        spawnHazard(projectile.tx, projectile.ty, projectile.hazardRadius, projectile.hazardDamage, 5, 1);
         continue;
       }
-      projectile.x += (dx / dist) * projectile.speed * dt;
-      projectile.y += (dy / dist) * projectile.speed * dt;
+
       remaining.push(projectile);
       continue;
     }
@@ -486,11 +510,24 @@ function updateExplosions(dt) {
 
   for (const explosion of state.explosions) {
     explosion.age += dt;
-    for (const enemy of state.enemies) {
-      if (explosion.hitIds.has(enemy.id)) continue;
-      if (distance(explosion, enemy) <= explosion.radius + enemy.radius) {
-        explosion.hitIds.add(enemy.id);
-        damageEnemy(enemy, explosion.damage);
+
+    if (explosion.kind === 'hazard') {
+      explosion.tickTimer = (explosion.tickTimer || 0) - dt;
+      if (explosion.tickTimer <= 0) {
+        explosion.tickTimer = explosion.tickInterval;
+        for (const enemy of state.enemies) {
+          if (distance(explosion, enemy) <= explosion.radius + enemy.radius) {
+            damageEnemy(enemy, explosion.damage);
+          }
+        }
+      }
+    } else {
+      for (const enemy of state.enemies) {
+        if (explosion.hitIds.has(enemy.id)) continue;
+        if (distance(explosion, enemy) <= explosion.radius + enemy.radius) {
+          explosion.hitIds.add(enemy.id);
+          damageEnemy(enemy, explosion.damage);
+        }
       }
     }
 
@@ -808,11 +845,16 @@ function drawProjectiles() {
 
     if (projectile.kind === 'mortar' && raccoonMortarImage.complete && raccoonMortarImage.naturalWidth > 0) {
       const size = projectile.radius * 4.4;
-      const angle = Math.atan2(projectile.ty - projectile.y, projectile.tx - projectile.x) + Math.PI / 2;
+      const pulse = 1 + Math.sin(projectile.life * 8) * 0.04;
       ctx.save();
-      ctx.translate(projectile.x, projectile.y);
-      ctx.rotate(angle);
-      ctx.drawImage(raccoonMortarImage, -size / 2, -size / 2, size, size);
+      ctx.translate(projectile.tx, projectile.ty);
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = '#ffcf56';
+      ctx.beginPath();
+      ctx.arc(0, 0, projectile.blastRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.drawImage(raccoonMortarImage, (-size * pulse) / 2, (-size * pulse) / 2, size * pulse, size * pulse);
       ctx.restore();
       continue;
     }
@@ -827,6 +869,14 @@ function drawProjectiles() {
 function drawExplosions() {
   for (const explosion of state.explosions) {
     const alpha = 1 - explosion.age / explosion.life;
+    if (explosion.kind === 'hazard') {
+      ctx.fillStyle = `rgba(255, 140, 66, ${Math.max(0.18, alpha * 0.28)})`;
+      ctx.beginPath();
+      ctx.arc(explosion.x, explosion.y, explosion.radius, 0, Math.PI * 2);
+      ctx.fill();
+      continue;
+    }
+
     ctx.fillStyle = `rgba(255, 209, 102, ${alpha * 0.45})`;
     ctx.beginPath();
     ctx.arc(explosion.x, explosion.y, explosion.radius, 0, Math.PI * 2);
