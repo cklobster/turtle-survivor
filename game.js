@@ -314,7 +314,7 @@ function fireMortar() {
   const player = state.player;
   const weapon = player.weapons.mortar;
   const target = getEnemyClusterTarget();
-  if (!target) return;
+  if (!target) return false;
 
   const level = weapon.level;
   const volley = level >= 4 ? 2 : 1;
@@ -334,13 +334,15 @@ function fireMortar() {
       color: '#8ecae6'
     });
   }
+
+  return true;
 }
 
 function fireBlade() {
   const player = state.player;
   const weapon = player.weapons.blade;
   const target = getClosestEnemy(player);
-  if (!target) return;
+  if (!target) return false;
 
   const level = weapon.level;
   const count = level >= 5 ? 2 : 1;
@@ -365,6 +367,8 @@ function fireBlade() {
       color: '#ffd166'
     });
   }
+
+  return true;
 }
 
 function updateWeapons(dt) {
@@ -373,15 +377,19 @@ function updateWeapons(dt) {
   const mortar = player.weapons.mortar;
   mortar.timer -= dt;
   if (mortar.timer <= 0) {
-    fireMortar();
-    mortar.timer = Math.max(0.35, mortar.cooldown - mortar.level * 0.08) * player.cooldownFactor;
+    const fired = fireMortar();
+    mortar.timer = fired
+      ? Math.max(0.35, mortar.cooldown - mortar.level * 0.08) * player.cooldownFactor
+      : 0.12;
   }
 
   const blade = player.weapons.blade;
   blade.timer -= dt;
   if (blade.timer <= 0) {
-    fireBlade();
-    blade.timer = Math.max(0.25, blade.cooldown - blade.level * 0.05) * player.cooldownFactor;
+    const fired = fireBlade();
+    blade.timer = fired
+      ? Math.max(0.25, blade.cooldown - blade.level * 0.05) * player.cooldownFactor
+      : 0.12;
   }
 
   player.weapons.orbit.angle += dt * (1.4 + player.weapons.orbit.level * 0.5);
