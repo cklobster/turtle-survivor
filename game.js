@@ -396,7 +396,7 @@ function fireBlade() {
       radius: 8,
       damage: 18 + level * 12,
       life: 0,
-      maxLife: 1.8 + level * 0.24,
+      maxLife: 3.6 + level * 0.48,
       returning: false,
       pierce: 1 + Math.floor(level / 2),
       hitIds: new Set(),
@@ -814,6 +814,11 @@ function drawPlayer() {
   ctx.beginPath();
   ctx.arc(player.x, player.y, player.pickupRadius, 0, Math.PI * 2);
   ctx.stroke();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${Math.ceil(player.health)} / ${player.maxHealth}`, player.x, player.y - player.radius - 24);
 }
 
 function drawEnemies() {
