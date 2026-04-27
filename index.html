@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Turtle Survivor</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <h1>Turtle Survivor</h1>
+          <p class="subtitle">海龜大戰蝦兵蟹將與巨型龍蝦</p>
+        </div>
+        <div class="legend">
+          <span class="tag turtle">海龜</span>
+          <span class="tag shrimp">蝦子</span>
+          <span class="tag crab">螃蟹</span>
+          <span class="tag lobster">龍蝦</span>
+        </div>
+      </header>
+
+      <main class="game-layout">
+        <section class="game-panel">
+          <div class="hud" id="hud">
+            <div class="hud-item"><span>生命</span><strong id="healthValue">100 / 100</strong></div>
+            <div class="hud-item"><span>等級</span><strong id="levelValue">1</strong></div>
+            <div class="hud-item"><span>經驗</span><strong id="xpValue">0 / 5</strong></div>
+            <div class="hud-item"><span>時間</span><strong id="timeValue">00:00</strong></div>
+          </div>
+
+          <div class="canvas-wrap">
+            <canvas id="gameCanvas" width="960" height="540"></canvas>
+
+            <div class="overlay hidden" id="startOverlay">
+              <div class="card">
+                <h2>準備出殼</h2>
+                <p>操作海龜生存下去，擊退蝦子、螃蟹與龍蝦。</p>
+                <ul>
+                  <li>移動：WASD / 方向鍵</li>
+                  <li>自動武器：浣熊迫擊砲、兔子迴旋刃、星星防護罩</li>
+                  <li>撿經驗後升級，三選一強化 build</li>
+                </ul>
+                <button id="startButton">開始遊戲</button>
+              </div>
+            </div>
+
+            <div class="overlay hidden" id="levelUpOverlay">
+              <div class="card levelup-card">
+                <h2>升級！選擇一個強化</h2>
+                <div class="upgrade-options" id="upgradeOptions"></div>
+              </div>
+            </div>
+
+            <div class="overlay hidden" id="gameOverOverlay">
+              <div class="card">
+                <h2>海龜倒下了</h2>
+                <p id="gameOverSummary">你撐過了 0 秒，等級 1。</p>
+                <button id="restartButton">再來一局</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="side-panel">
+          <section class="info-card">
+            <h3>武器配置</h3>
+            <ul id="weaponList">
+              <li>浣熊迫擊砲 <span id="weaponMortar">Lv.0</span></li>
+              <li>兔子迴旋刃 <span id="weaponBlade">Lv.0</span></li>
+              <li>星星防護罩 <span id="weaponOrbit">Lv.0</span></li>
+            </ul>
+          </section>
+
+          <section class="info-card">
+            <h3>被動能力</h3>
+            <ul id="passiveList">
+              <li>厚殼 <span id="passiveShell">Lv.0</span></li>
+              <li>潮汐步伐 <span id="passiveStride">Lv.0</span></li>
+              <li>海流裝填 <span id="passiveReload">Lv.0</span></li>
+              <li>幸運貝殼 <span id="passiveMagnet">Lv.0</span></li>
+            </ul>
+          </section>
+
+          <section class="info-card controls-card">
+            <h3>玩法說明</h3>
+            <ul>
+              <li>蝦子：快但脆</li>
+              <li>螃蟹：中速中坦</li>
+              <li>龍蝦：慢但很硬</li>
+              <li>撿藍色經驗珠升級</li>
+              <li>武器自動攻擊，專心走位</li>
+            </ul>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <script src="./game.js"></script>
+  </body>
+</html>
