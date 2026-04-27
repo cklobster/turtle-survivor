@@ -27,6 +27,18 @@ const WORLD = {
   height: canvas.height
 };
 
+const turtleImage = new Image();
+turtleImage.src = './assets/turtle.png';
+
+const rabbitBladeImage = new Image();
+rabbitBladeImage.src = './assets/rabbit-blade.png';
+
+const raccoonMortarImage = new Image();
+raccoonMortarImage.src = './assets/raccoon-mortar.png';
+
+const shrimpImage = new Image();
+shrimpImage.src = './assets/shrimp.png';
+
 const keys = new Set();
 
 const state = {
@@ -714,20 +726,33 @@ function drawPlayer() {
   ctx.save();
   ctx.translate(player.x, player.y);
 
-  ctx.fillStyle = player.hitFlash > 0 ? '#ffffff' : '#52b788';
-  ctx.beginPath();
-  ctx.arc(0, 0, player.radius, 0, Math.PI * 2);
-  ctx.fill();
+  if (turtleImage.complete && turtleImage.naturalWidth > 0) {
+    const size = player.radius * 2.8;
+    if (player.hitFlash > 0) {
+      ctx.globalAlpha = 0.65;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(0, 0, player.radius + 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    ctx.drawImage(turtleImage, -size / 2, -size / 2, size, size);
+  } else {
+    ctx.fillStyle = player.hitFlash > 0 ? '#ffffff' : '#52b788';
+    ctx.beginPath();
+    ctx.arc(0, 0, player.radius, 0, Math.PI * 2);
+    ctx.fill();
 
-  ctx.fillStyle = '#2d6a4f';
-  ctx.beginPath();
-  ctx.ellipse(0, 0, player.radius - 4, player.radius - 7, 0, 0, Math.PI * 2);
-  ctx.fill();
+    ctx.fillStyle = '#2d6a4f';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, player.radius - 4, player.radius - 7, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-  ctx.fillStyle = '#95d5b2';
-  ctx.beginPath();
-  ctx.arc(player.facing.x * 12, player.facing.y * 12, 7, 0, Math.PI * 2);
-  ctx.fill();
+    ctx.fillStyle = '#95d5b2';
+    ctx.beginPath();
+    ctx.arc(player.facing.x * 12, player.facing.y * 12, 7, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   ctx.restore();
 
@@ -740,10 +765,26 @@ function drawPlayer() {
 
 function drawEnemies() {
   for (const enemy of state.enemies) {
-    ctx.fillStyle = enemy.hitFlash > 0 ? '#ffffff' : enemy.color;
-    ctx.beginPath();
-    ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
-    ctx.fill();
+    if (enemy.type === 'shrimp' && shrimpImage.complete && shrimpImage.naturalWidth > 0) {
+      const size = enemy.radius * 2.6;
+      ctx.save();
+      ctx.translate(enemy.x, enemy.y);
+      if (enemy.hitFlash > 0) {
+        ctx.globalAlpha = 0.65;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(0, 0, enemy.radius + 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      ctx.drawImage(shrimpImage, -size / 2, -size / 2, size, size);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = enemy.hitFlash > 0 ? '#ffffff' : enemy.color;
+      ctx.beginPath();
+      ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
     ctx.fillRect(enemy.x - enemy.radius, enemy.y - enemy.radius - 10, enemy.radius * 2, 4);
@@ -754,6 +795,28 @@ function drawEnemies() {
 
 function drawProjectiles() {
   for (const projectile of state.projectiles) {
+    if (projectile.kind === 'blade' && rabbitBladeImage.complete && rabbitBladeImage.naturalWidth > 0) {
+      const size = projectile.radius * 4;
+      const angle = Math.atan2(projectile.vy, projectile.vx) + Math.PI / 2;
+      ctx.save();
+      ctx.translate(projectile.x, projectile.y);
+      ctx.rotate(angle);
+      ctx.drawImage(rabbitBladeImage, -size / 2, -size / 2, size, size);
+      ctx.restore();
+      continue;
+    }
+
+    if (projectile.kind === 'mortar' && raccoonMortarImage.complete && raccoonMortarImage.naturalWidth > 0) {
+      const size = projectile.radius * 4.4;
+      const angle = Math.atan2(projectile.ty - projectile.y, projectile.tx - projectile.x) + Math.PI / 2;
+      ctx.save();
+      ctx.translate(projectile.x, projectile.y);
+      ctx.rotate(angle);
+      ctx.drawImage(raccoonMortarImage, -size / 2, -size / 2, size, size);
+      ctx.restore();
+      continue;
+    }
+
     ctx.fillStyle = projectile.color;
     ctx.beginPath();
     ctx.arc(projectile.x, projectile.y, projectile.radius, 0, Math.PI * 2);
