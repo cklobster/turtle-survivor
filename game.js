@@ -434,7 +434,14 @@ function updateWeapons(dt) {
 function damageEnemy(enemy, amount) {
   enemy.health -= amount;
   enemy.hitFlash = 0.12;
-  state.floatingTexts.push({ x: enemy.x, y: enemy.y - enemy.radius, text: `${Math.round(amount)}`, age: 0, life: 0.45 });
+  state.floatingTexts.push({
+    x: enemy.x,
+    y: enemy.y - enemy.radius,
+    text: `${Math.round(amount)}`,
+    age: 0,
+    life: 0.45,
+    color: '#ffffff'
+  });
   if (enemy.health <= 0) {
     killEnemy(enemy);
     return true;
@@ -494,7 +501,8 @@ function updateProjectiles(dt) {
         }
       }
 
-      if (projectile.life >= projectile.maxLife || projectile.pierce < 0) {
+      const reachedPlayer = projectile.returning && distance(projectile, player) <= player.radius + projectile.radius;
+      if ((projectile.life >= projectile.maxLife && !projectile.returning) || reachedPlayer) {
         continue;
       }
 
@@ -641,6 +649,14 @@ function takeDamage(amount) {
   const player = state.player;
   player.health = Math.max(0, player.health - amount);
   player.hitFlash = 0.18;
+  state.floatingTexts.push({
+    x: player.x,
+    y: player.y - player.radius - 12,
+    text: `-${Math.round(amount)}`,
+    age: 0,
+    life: 0.6,
+    color: '#ff4d6d'
+  });
   updateHud();
   if (player.health <= 0) {
     endGame();
@@ -904,11 +920,11 @@ function drawOrbitStars() {
 }
 
 function drawFloatingTexts() {
-  ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 14px sans-serif';
   ctx.textAlign = 'center';
   for (const text of state.floatingTexts) {
     ctx.globalAlpha = 1 - text.age / text.life;
+    ctx.fillStyle = text.color || '#ffffff';
     ctx.fillText(text.text, text.x, text.y);
   }
   ctx.globalAlpha = 1;
