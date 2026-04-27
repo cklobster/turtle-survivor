@@ -68,11 +68,11 @@ const baseStats = {
 };
 
 function getMortarCooldown(level, cooldownFactor = 1) {
-  return Math.max(0.35, 1.35 - level * 0.08) * cooldownFactor;
+  return Math.max(0.35, 1.35 - level * 0.08) * 5 * cooldownFactor;
 }
 
 function getBladeCooldown(level, cooldownFactor = 1) {
-  return Math.max(0.25, 0.95 - level * 0.05) * cooldownFactor;
+  return Math.max(0.25, 0.95 - level * 0.05) * 3 * cooldownFactor;
 }
 
 function createPlayer() {
